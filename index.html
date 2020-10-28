@@ -1,0 +1,799 @@
+<!--
+
+    Démonstration d'une page web cliente du service Web API bookmarks
+    Cette page offre les opérations CRUD sur une liste de bookmarks conservée dans une base de données du serveur.
+
+    C - Create - POST
+    R - Read   - GET
+    U - Update - PUT
+    D - Delete - DELETE
+
+    Code de la page : Nicolas Chourot
+    Service Web API : Nicolas Chourot
+
+    Date de mise à jour: 26 octobre 2020
+-->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta author="Nicolas Chourot">
+        <meta http-equiv="Content-Type" content="text/html; charset= ISO-8859-1">
+        <title>Gestion de favoris</title>
+              
+        <link rel="stylesheet" href="css/jquery-ui.css">  
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+        <!-- Style pour les infobulles -->
+        <link rel="stylesheet" href="css/tooltip.css">
+
+        <!-- pour la dialogue de confirmation de retrait d'un bookmark -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css">
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+         <!-- Style pour l'interface et la liste des bookmarks -->
+         <link rel="stylesheet" href="css/BookmarksManagerLayout.css">
+
+        <!-- lien vers le favicon généré par https://favicon.io/favicon-converter/ -->
+        <link rel="icon" href="favicon.ico">
+
+        <style>
+            /* Arrière plan de la page */
+            body { 
+                background: url(images/bg.png) no-repeat center center fixed; 
+                -webkit-background-size: cover;
+                -moz-background-size: cover;
+                -o-background-size: cover;
+                background-size: cover;
+                }
+        </style>
+    </head>   
+    <body>
+        <!-- Entête de la liste des bookmarks -->
+        <div class="container">
+            <div class="title-container">
+                <h2><img src="images/bookmark_logo.png" style="height: 40px;">&nbsp;Gestionnaire de favoris</h2>
+                <div style="margin-top:24px;text-align:right;"><h4 id="username" >non connecté</h4></div>
+                <div style="margin-top:30px;text-align:right;">
+                    <div id="btn_OpenLoginForm" tooltip="Connexion"  tooltip-position="bottom">
+                        <span id="showSearchIcon" class="giconBig glyphicon glyphicon-log-in" >&nbsp;</span>
+                    </div>
+                    <div id="btn_OpenConfirmLogout" tooltip="Déconnexion"  tooltip-position="bottom">
+                        <span id="showSearchIcon" class="giconBig glyphicon glyphicon-log-out" >&nbsp;</span>
+                    </div>
+                    <div id="btn_OpenProfilDialog" tooltip="Enregistrement"  tooltip-position="bottom">
+                        <img src="images/register.png" id="showRegister" class="icon" >
+                    </div>
+                </div>
+            </div>
+                       
+            <div class="array-container">
+                <div class="header-container">
+                    <div class="header-bookmarks-container columns-layout">
+                        <div id="sort_Name" class="sortcmd">Titre &nbsp;<span id="dir_Name"></span></div>
+                        <div id="sort_Category" class="sortcmd">Catégorie &nbsp;<span id="dir_Category"></span></div>
+                        <div id="sort_Username" class="sortcmd">Usager &nbsp;<span id="dir_Username"></span></div>
+                        <div id="showSearch" tooltip="Barre de recherche"  tooltip-position="left">
+                            <span id="showSearchIcon" class="gicon glyphicon glyphicon-zoom-in" ></span>
+                        </div>
+                        <div id="btn_OpenAddBookmarkDialog" tooltip="Ajouter un favori" tooltip-position="left">
+                            <span class="gicon glyphicon glyphicon-plus"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="searchBar columns-layout">
+                    <div><input type="search" placeholder="Titre..." id="search_name"></div>
+                    <div><input type="search" placeholder="Catégorie..." id="search_category"></div>
+                    <div><input type="search" placeholder="Usager..." id="search_user"></div>
+                    <div>
+                        <span id="doSearch" tooltip="Rafraîchir" tooltip-position="top">
+                            <span class="gicon glyphicon glyphicon-refresh"></span>
+                        </span>
+                    </div>
+                    <div></div>
+                </div>
+                
+                <div class="bookmark-list-scroll-containter">
+                    <div class="bookmark-list-container columns-layout" id="bookmarkList">
+                        <!-- La liste de bookmarks sera injectée ici par du JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!---BOOKMARK DIALOG------------------------------------------------------------------------>
+        <div id="dialog-bookmarkForm" title="Bookmark" class="dialog">
+            <form id="bookmarkForm" class="form-group">
+                    <input type="hidden" id="bookmarkId" />
+                    <input type="hidden" id="bookmarkUserId" />
+                    <input type="text" id="bookmarkName" placeholder="Titre" class="form-control"/>
+                    <input type="text" id="bookmarkUrl" placeholder="Url"  class="form-control"/>
+                    <input type="text" id="bookmarkCategory" placeholder="Catégorie" class="form-control"/>
+            </form>
+        </div>
+        <!---LOGIN DIALOG--------------------------------------------------------------------------->
+        <div id="dialog-loginForm" title="Connexion" class="dialog">
+            <form id="loginForm" class="form-group">
+                <input type="text" id="loginEmail" placeholder="Courriel"  class="form-control"/>
+                <input type="password" id="loginPassword" placeholder="Mot de passe" class="form-control"/>
+            </form>
+        </div>
+
+         <!---PROFIL DIALOG--------------------------------------------------------------------------->
+         <div id="dialog-profilForm" title="Profil" class="dialog">
+            <form id="profilForm" class="form-group">
+                <input type="text" id="profilUsername" placeholder="Nom d'usager"  class="form-control"/>
+                <input type="text" id="profilEmail" placeholder="Courriel"  class="form-control"/>
+                <input type="password" id="profilPassword" placeholder="Mot de passe"  class="form-control"/>
+                <br>
+                <input type="password" id="profilConfirmPassword" placeholder="Confirmation"  class="form-control"/>
+            </form>
+        </div>
+ 
+        <script src="js/jquery-3.5.1.js"></script>
+        <script src="js/jquery-ui.js"></script>
+        <script src="js/Validation.js"></script>
+        <script src="js/WebAPIRequest.js"></script>
+        <script src="js/jquery-confirm.js"></script>
+        <script src="js/jquery.maskedinput.js"></script>
+
+        <script>
+            "use strict";
+
+            $(document).ready(initUI);
+
+            let editMode = false;
+            let addMode = false;
+            let newProfil = false;
+            let connected = false;
+            let queryString = "";
+            let search = "";
+            let searchShowed = false;
+            let sorted = [{field:"Username", desc:false}, {field:"Name", desc:false}];
+            let forceRefreshbookmarkList = false;
+            let currentETag = "";
+            let previousQueryString = ""; 
+            let bookmarkValidationProvider = null;
+            let profilValidationProvider = null;
+            let pauseBookmarksListPeriodicRefresh = false;
+
+            function initUI() {
+                initBookmarkValidation();
+                initProfilValidation();
+
+                initBookmarkDialog();
+                initLoginDialog();
+                initProfilDialog();              
+
+                $(".searchBar").hide();
+                $('#btn_OpenAddBookmarkDialog').click(OpenAddBookmarkDialog);
+                $("#btn_OpenLoginForm").click(OpenLoginForm);
+                $("#btn_OpenConfirmLogout").click(OpenConfirmLogout);
+                $("#btn_OpenProfilDialog").click(OpenProfilDialog);
+
+                $('#showSearch').click(toogleSearchVisibility);
+                
+                $("#sort_Name").click(updateSort);
+                $("#sort_Url").click(updateSort);
+                $("#sort_Username").click(updateSort);
+
+                $("input[type=search").on("input", updateSearch)
+
+                insertWaitingStatus();
+                initBookmarksListColumnsLayout();
+                installPeriodicBookmarksListRefresh();
+                updateUI();
+            }
+
+            function initBookmarksListColumnsLayout() {
+                createCssClass('.columns-layout',"display: grid; grid-template-columns: 30% 30% 30% 5% 5%;"); 
+            }
+            function initBookmarkDialog() {
+                $("#dialog-bookmarkForm" ).dialog({ 
+                    autoOpen: false,  
+                    show: {effect: 'fade', duration: 400},
+                    hide: {effect: 'fade', duration: 400},
+                    buttons:[
+                        {
+                            id : 'btn-SaveBookmark',
+                            text : 'Soumettre',
+                            click : function() {
+                                    // Ajout d'un bookmark
+                                    if (addMode) {
+                                        let bookmark = makeBookmarkFromBookmarkForm(false);
+                                        if (bookmarkValidationProvider.isValid()) {
+                                            webAPI_POST(bookmark, ()=>{ getBookmarks(); $("#dialog-bookmarkForm").dialog( "close" ); }, AlertError);
+                                        }
+                                    } else {
+                                        let bookmark = makeBookmarkFromBookmarkForm(true);
+                                        if (bookmarkValidationProvider.isValid()) {
+                                            webAPI_PUT(bookmark, ()=>{ getBookmarks(); $("#dialog-bookmarkForm").dialog( "close" ); }, AlertError);
+                                        }
+                                    }
+                            }
+                        },
+                        {
+                            id : 'btn-CancelBookmark',
+                            text : 'Annuler',
+                            click : function(){
+                                        $(this).dialog('close');
+                                    }
+                        }
+                    ]
+                });
+                $('#dialog-bookmarkForm').on('dialogopen', function(event) {
+                    pauseBookmarksListPeriodicRefresh = true;
+                    $('#btn-SaveBookmark').addClass("btn btn-primary");
+                    $('#btn-CancelBookmark').addClass("btn btn-secondary");
+                    $('#bookmarkName').val("");
+                    $('#bookmarkUrl').val("");
+                    $('#bookmarkCategory').val("");
+                    $("#btn_OpenAddBookmarkDialog").hide();
+                });
+                $('#dialog-bookmarkForm').on('dialogclose', function(event) {
+                    addMode = false;
+                    editMode= false;
+                    pauseBookmarksListPeriodicRefresh = false;
+                    resetBookmarkValidation();
+                    $("#btn_OpenAddBookmarkDialog").show();
+                });
+            }            
+            function OpenAddBookmarkDialog() {
+                addMode = true;
+                $('#dialog-bookmarkForm').dialog('option', 'title', 'Ajout de favori');
+                $("#dialog-bookmarkForm" ).dialog( 'open' );
+            }
+            function OpenEditBookmarkDialog(e){
+                editMode = true;
+                $('#dialog-bookmarkForm').dialog('option', 'title', 'Modification de favori');
+                $("#dialog-bookmarkForm").dialog( 'open' );
+                let bookmarkId = e.currentTarget.id.split('_')[1];
+                webAPI_GET(bookmarkId, fillEditBookmarkForm, AlertError);
+            }
+            function fillEditBookmarkForm(bookmark) {
+                $('#bookmarkId').val(bookmark.Id); 
+                $('#bookmarkUserId').val(bookmark.UserId);
+                $('#bookmarkName').val(bookmark.Name);
+                $('#bookmarkUrl').val(bookmark.Url);
+                $('#bookmarkCategory').val(bookmark.Category);
+            }
+            function makeBookmarkFromBookmarkForm(includeId = false) {
+                if (includeId) {
+                    // Récupération du Id du bookmark dans le contrôle caché
+                    let bookmarkId = parseInt($('#bookmarkId').val());
+                    let userId = parseInt($('#bookmarkUserId').val());
+                    return {Id: bookmarkId, Name: $('#bookmarkName').val(), Url: $('#bookmarkUrl').val(), Category: $('#bookmarkCategory').val(), UserId: userId};
+                }
+                return { Id: 0, Name: $('#bookmarkName').val(), Url: $('#bookmarkUrl').val(), Category: $('#bookmarkCategory').val(), UserId: retrieveLoggedUserId()};
+            }
+            function deletebookmark(e) {
+                // Extraction du Id du bookmark inscrit dans l'attribut id de l'élément déclencheur de l'événement click
+                let bookmarkId = parseInt(e.currentTarget.id.split('_')[1]);
+                webAPI_GET(bookmarkId, confirmDeletebookmark, AlertError);
+            }
+            function confirmDeletebookmark(bookmark) {
+                console.log(bookmark)
+                $.confirm({
+                    title: 'Retrait du favori',
+                    content: '<b>'+ makeFavicon(bookmark.Url) + bookmark.Name +'</b>?',
+                    buttons: {
+                        confirmer: function () {
+                            webAPI_DELETE(bookmark.Id, getBookmarks, AlertError);
+                        },
+                        annuler: {},
+                    }
+                });
+            }
+
+            function initProfilDialog() {
+                $("#dialog-profilForm" ).dialog(
+                    {   autoOpen: false,
+                        show: {effect: 'fade', speed: 400},
+                        hide: {effect: 'fade', speed: 400},
+                        buttons:[
+                            {
+                                id : 'btn-SaveProfil',
+                                text : 'Enregister',
+                                click : function() {
+                                    let profilFromForm = {  Id :  retrieveLoggedUserId(),
+                                                            Name: $("#profilUsername").val(),
+                                                            Email: $("#profilEmail").val(),
+                                                            Password: $("#profilPassword").val(),
+                                                        }
+                                    if (connected)
+                                        webAPI_ChangeProfil(profilFromForm, ()=>{$("#dialog-profilForm").dialog( "close" ); updateUI(true);}, AlertError);
+                                    else {
+                                        profilFromForm.Id = 0;
+                                        webAPI_Register(profilFromForm, ()=>{$("#dialog-profilForm").dialog( "close" ); updateUI(true);}, AlertError);
+                                    }
+                                }
+                            },
+                            {
+                                id : 'btn-CancelProfil',
+                                text : 'Annuler',
+                                click : function(){
+                                            $(this).dialog('close');
+                                        }
+                            },
+                            {
+                                id : 'btn-deleteProfil',
+                                text : 'Effacer mon compte',
+                                click : function (){
+                                    confirmDeleteAccount();
+                                }
+                            }
+                        ]
+                        });
+                $('#dialog-loginForm').on('dialogclose', function(event) {
+                   pauseBookmarksListPeriodicRefresh = false;
+                });
+                $('#dialog-profilForm').on('dialogopen', function(event) {
+                    pauseBookmarksListPeriodicRefresh = true;
+                    $('#btn-SaveProfil').addClass("btn btn-primary");
+                    $('#btn-deleteProfil').addClass("btn btn-danger");
+                    $('#btn-CancelProfil').addClass("btn btn-secondary");
+                    if (connected) {
+                        $('#profilUsername').val(retrieveLoggedUsername());
+                        console.log(retrieveLoggedUserEmail());
+                        $('#profilEmail').val(retrieveLoggedUserEmail());
+                       
+                        $('#btn-deleteProfil').show();
+                    } else {
+                        $('#profilUsername').val("");
+                        $('#profilEmail').val("");
+                        $('#btn-deleteProfil').show();
+                    }
+                    $('#profilPassword').val("");
+                    $('#profilConfirmPassword').val("");
+                    $("#btn_OpenAddBookmarkDialog").hide();
+                });
+                $('#dialog-profilForm').on('dialogclose', function(event) {
+                    pauseBookmarksListPeriodicRefresh = false;
+                    resetProfilValidation();
+                    if (connected)
+                        $("#btn_OpenAddBookmarkDialog").show();
+                });
+            }
+            function OpenProfilDialog() {
+                pauseBookmarksListPeriodicRefresh = true;
+                console.log("OpenProfilDialog")
+                $("#dialog-profilForm" ).dialog('open');
+            }
+            function confirmDeleteAccount() {
+                $.confirm({
+                    title: 'Retrait de compte',
+                    content: '<b>Voulez-vous vraiment effacer votre compte?</b>?',
+                    buttons: {
+                        confirmer: function () {
+                            webAPI_DELETE_Account();
+                        },
+                        annuler: {},
+                    }
+                });
+            }
+ 
+            function initLoginDialog() {
+                $("#dialog-loginForm" ).dialog(
+                    {   autoOpen: false,
+                        show: {effect: 'fade', speed: 400},
+                        hide: {effect: 'fade', speed: 400},
+                        buttons:[
+                        {
+                            id : 'btn-OkLogin',
+                            text : 'Ok',
+                            click : function() {
+                                webAPI_login($("#loginEmail").val(), $("#loginPassword").val(), ()=>{$("#dialog-loginForm").dialog( "close" ); updateUI(true);}, failLogin);
+                            }
+                        },
+                        {
+                            id : 'btn-CancelLogin',
+                            text : 'Annuler',
+                            click : function(){
+                                        $(this).dialog('close');
+                                    }
+                        }
+                    ]
+                    });
+                $('#dialog-loginForm').on('dialogclose', function(event) {
+                   pauseBookmarksListPeriodicRefresh = false;
+                });
+            }
+            function OpenConfirmLogout() {
+                $.confirm({
+                    title: 'Déconnection...',
+                    content: 'Voulez-vous vous déconnecter?',
+                    buttons: {
+                        confirmer: function () {
+                            deConnect();
+                            updateUI(true);
+                        },
+                        annuler: {},
+                    }
+                });
+            }
+            function OpenLoginForm() {
+                $('#btn-OkLogin').addClass("btn btn-primary");
+                $('#btn-CancelLogin').addClass("btn btn-secondary");
+                $("#dialog-loginForm" ).dialog( 'open' );
+            }
+            function setUsername(username) {
+                $("#username").html("<span id='link_OpenProfilDialog' style='color:blue;' tooltip='Modifier votre profil' class='clickable'>" + username.toString() + "</span>");
+                $("#link_OpenProfilDialog").click(OpenProfilDialog);
+            }
+            function unsetUsername() {
+                $("#username").html("<span style='color:gray'>non connecté</span>");
+            }
+ 
+            function successLogin() {
+                Alert("Connexion réussie");
+                connected = true;
+                setUsername(retrieveLoggedUsername());
+                updateUI();
+            }
+            function failLogin() {
+                Alert("Connexion échouée");
+                connected = false;
+                unsetUsername();
+                updateUI();
+            }
+
+            function updateUI(forceRefresh = false){
+                forceRefreshbookmarkList = forceRefresh;
+                updateConnected();
+                updateWriteAccess();
+                updateHead();
+                forceRefresh = false;
+            }
+            function updateConnected() {
+                let username = retrieveLoggedUsername();
+                let userid = retrieveLoggedUserId();
+                connected = (username != null);
+                console.log("updateConnected", username, userid, connected)
+                if (connected) {
+                    setUsername(username );
+                    $("#btn_OpenLoginForm").hide();
+                    $("#btn_OpenConfirmLogout").show();
+                }
+                else {
+                    unsetUsername();
+                    $("#btn_OpenLoginForm").show();
+                    $("#btn_OpenConfirmLogout").hide();
+                }
+            }
+            function updateWriteAccess() {
+                if (connected) {
+                    $("#btn_OpenAddBookmarkDialog").show();
+                } else {
+                    $("#btn_OpenAddBookmarkDialog").hide();
+                }
+            }
+            function installPeriodicBookmarksListRefresh() {
+                setInterval(() => { if (!pauseBookmarksListPeriodicRefresh) getBookmarks(); }, 15000);
+            }
+
+            function toogleSearchVisibility() {
+                if (searchShowed)
+                    hideSearch();
+                else
+                    showSearch();
+                searchShowed = ! searchShowed;
+            }
+            function hideSearch() {
+                $(".searchBar").hide({duration:400});
+                $("#showSearchIcon").removeClass("glyphicon glyphicon-zoom-out");
+                $("#showSearchIcon").addClass("glyphicon glyphicon-zoom-in");
+            }
+            function showSearch() {
+                $(".searchBar").show({duration:400});
+                $("#showSearchIcon").removeClass("glyphicon glyphicon-zoom-in");
+                $("#showSearchIcon").addClass("glyphicon glyphicon-zoom-out");
+            }
+            function updateSort(e){
+                let name = e.target.id.split('_')[1];
+                $("#dir_"+name).removeClass("glyphicon glyphicon-sort-by-attributes");
+                $("#dir_"+name).removeClass("glyphicon glyphicon-sort-by-attributes-alt");
+                let found = false;
+                for(let i=0; i < sorted.length; i++){
+                    if (sorted[i].field == name) {
+                        found = true;
+                        if (sorted[i].desc)
+                            sorted.splice(i,1);
+                        else    
+                            sorted[i].desc = true;
+                        break;
+                    }
+                }   
+                if (!found) 
+                    sorted.push({field:name, desc:false});
+                updateHead();
+            }
+            function addSearchKey(key, value) {
+                if (value != ""){
+                    if (search != "") search += "&";
+                    search += key + "=" + value + "*";
+                }
+            }
+            function updateSearch(){ 
+                search = "";
+                addSearchKey("name", $("#search_name").val());                
+                addSearchKey("category", $("#search_category").val());
+                addSearchKey("username", $("#search_user").val());
+                
+                if (search != "") {
+                    if (queryString != "")
+                        search = "&" + search;   
+                    else
+                        search = "?"+ search;
+                }
+                updateUI(true);
+            }
+            function updateHead() {
+                queryString = "";
+                let first = true;
+                let sortIndex =0;
+                sorted.forEach(sort => {
+                    if (first) {
+                        first = false;
+                        queryString += '?';
+                    }
+                    else queryString += '&';
+                    queryString += "sort=" +sort.field.toLowerCase();
+                    // opacité en fonction du rang de la clé de tri
+                    $("#dir_"+sort.field).css("opacity", 1-sortIndex/3);
+                    if (sort.desc) {
+                        queryString += ',desc';
+                        $("#dir_"+sort.field).addClass('glyphicon glyphicon-sort-by-attributes-alt');
+                    } else
+                    $("#dir_"+sort.field).addClass('glyphicon glyphicon-sort-by-attributes');
+                    sortIndex ++;
+                });
+                getBookmarks();
+            }
+ 
+            function createCssClass(name, rules){
+                var style = document.createElement('style');
+                style.type = 'text/css';
+                document.getElementsByTagName('head')[0].appendChild(style);
+                if(!(style.sheet||{}).insertRule) 
+                    (style.styleSheet || style.sheet).addRule(name, rules);
+                else
+                    style.sheet.insertRule(name+"{"+rules+"}",0);
+            }
+ 
+            function insertWaitingStatus(){
+                $('#bookmarkList').empty()
+                $('#bookmarkList').append(  makeCell("En attente de réponse du service Web...", "waiting"));
+                $('#bookmarkList').append($('<img src="images/Loading_icon.gif" alt="waiting"/>'));
+            }
+            function statusToString(status) {
+                let text = "Le server ne répond pas.";
+                console.log(status)
+                switch (status){
+                    case 401: text = "<br>Requête non autorisée. <br>Vous devez être connecté."; break;
+                    case 409: text = "<br>Conflit de données. <br>Requête refusée."; break;
+                    case 422: text = "<br>Format des données soumises incorrect. <br>Requête refusée."; break;
+                }
+                return text;
+            }
+            function closeAllDialog() {
+                $(".dialog").dialog("close");
+            }
+            function forceLogout() {
+                Alert("Expiration de permission d'accès. Vous n'êtes plus connecté.");
+                closeAllDialog();
+                deConnect();
+            }
+            function Alert(message) {
+                $.confirm({
+                    title: message,
+                    content: '',
+                    buttons: {
+                        fermer: function () { }
+                    }
+                });
+            }
+            function AlertError(status) {
+                $.confirm({
+                    title: "Message provenant du server...",
+                    content: '<img src="images/error.png" style="width:60px;margin:10px" alt="httpError"/>' + statusToString(status),
+                    buttons: {
+                        fermer: function () { 
+                            if (status == 401) {
+                                this.close();
+                                forceLogout();
+                                updateUI();
+                            }
+                        }
+                    }
+                });
+            }
+
+            function initBookmarkValidation() {
+                bookmarkValidationProvider = new ValidationProvider("bookmarkForm");
+                bookmarkValidationProvider.addControl("bookmarkName", validate_BookmarkName, false /*validateOnLeave*/);
+                bookmarkValidationProvider.addControl("bookmarkUrl", validate_BookmarkUrl, false /*validateOnLeave*/);
+                bookmarkValidationProvider.addControl("bookmarkCategory", validate_BookmarkCategory, false /*validateOnLeave*/);
+            }
+            function resetBookmarkValidation() {
+                bookmarkValidationProvider.reset();
+            }
+            function validate_BookmarkName(){
+                let TBX_FirstName = document.getElementById("bookmarkName");
+                if (TBX_FirstName.value === "")
+                    return "Titre manquant";
+                return "";
+            }
+            function validate_BookmarkCategory(){
+                let TBX_LastName = document.getElementById("bookmarkCategory");
+                if (TBX_LastName.value === "")
+                    return "Catégorie manquante";
+                return "";
+            }
+            function validate_BookmarkUrl(){
+                let TBX_Url = document.getElementById("bookmarkUrl");
+                let UrlRegex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%!\-\/]))?/;
+                if (TBX_Url.value === "")
+                    return "URL manquant";
+                if (!UrlRegex.test(TBX_Url.value))
+                    return "URL invalide";
+                return "";
+            }            
+
+            function initProfilValidation() {
+                profilValidationProvider = null;
+                profilValidationProvider = new ValidationProvider("profilForm");
+                profilValidationProvider.addControl("profilUsername", validate_ProfilUsername, false /*validateOnLeave*/);
+                profilValidationProvider.addControl("profilEmail", validate_ProfilEmail, false /*validateOnLeave*/);
+                profilValidationProvider.addControl("profilPassword", validate_ProfilPassword, false /*validateOnLeave*/);
+                profilValidationProvider.addControl("profilConfirmPassword", validate_ProfilConfirmPassword, false /*validateOnLeave*/);
+            }
+            function resetProfilValidation() {
+                profilValidationProvider.reset();
+            }
+            function validate_ProfilUsername(){
+                let TBX_Username = document.getElementById("profilUsername");
+                if (TBX_Username.value === "")
+                    return "Nom d'usager manquant";
+                return "";
+            }
+            function validate_ProfilEmail(){
+                let TBX_Email = document.getElementById("profilEmail");
+                let UrlRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                if (TBX_Email.value === "")
+                    return "Courriel manquant";
+                if (!UrlRegex.test(TBX_Email.value))
+                    return "Courriel invalide";
+                return "";
+            }            
+            function validate_ProfilPassword(){
+                return "";
+            }
+            function validate_ProfilConfirmPassword(){
+                let TBX_Confirm = document.getElementById("profilConfirmPassword");
+                if (TBX_Confirm.value != "") {
+                    let TBX_Password = document.getElementById("profilPassword");
+                    if (TBX_Confirm.value != TBX_Password.value)
+                        return "Différent du mot de passe."
+                }
+                return "";
+            }
+
+            function getBookmarks() {
+                console.log(queryString + search);
+                webAPI_HEAD(checkETag, AlertError);
+            }
+            function checkETag(ETag){
+                console.log(ETag);
+               if (ETag != currentETag || forceRefreshbookmarkList) {
+                    webAPI_GET_ALL(queryString + search, updatebookmarkList, AlertError);
+                    currentETag = ETag;
+               } else {
+                   if (previousQueryString != queryString){
+                    webAPI_GET_ALL(queryString + search, updatebookmarkList, AlertError);
+                    previousQueryString = queryString;
+                   }
+               }
+            }
+            function cellOver(e){
+                if (!addMode && !editMode) {
+                    // currentTarget.className contient en principe : 'row_x cell ...'
+                    let bookmarkId = e.currentTarget.className.split(' ')[0].split('_')[1];
+                    $('#edit_' + bookmarkId).show();
+                    $('#delete_' + bookmarkId).show();
+                    $('.row_'+bookmarkId).addClass('selectedRow');
+                }
+            }
+            function cellBlur(e){
+                if (!editMode) {
+                    // currentTarget.className contient en principe : 'row_x cell ...'
+                    let bookmarkId = e.currentTarget.className.split(' ')[0].split('_')[1];
+                    $('#edit_' + bookmarkId).hide();
+                    $('#delete_' + bookmarkId).hide();
+                    $('.row_'+bookmarkId).removeClass('selectedRow');
+                }
+            }
+            function makeCell(content, cssClass){
+                return $('<div class= "' + cssClass + '">' + content + '</div>');
+            }
+            function makeButton(cssClass, id, tooltip) {
+                return $('<span id="' + id + '" class="'+ cssClass + '"tooltip="' + tooltip + '" tooltip-position="left"></span>');
+            }
+            function makeGlyphIcon(glyphIconId){
+                return $("<div class='gicon glyphicon glyphicon-" + glyphIconId + "'></div>");
+            }
+            function makeHyperLink(url, caption){
+                return '<a href="' + url +'"target="_blank">' + caption + '</a>';
+            }          
+            function makeFavicon(url) {
+                // Utiliser l'API de google pour extraire le favicon du site pointé par url
+                // retourne un élément div comportant le favicon en tant qu'image de fond
+                ///////////////////////////////////////////////////////////////////////////
+                if (url.slice(-1) != '/') url += '/';
+                url = "http://www.google.com/s2/favicons?sz=64&domain=" + url;
+                return '<div class="favicon" style="background-image: url(' + url + ');"></div>';
+            }           
+            function updatebookmarkList(bookmarks) {
+                // Rafraichir la liste des bookmarks
+                // paramètre bookmarks: tableau d'objets bookmark
+                /////////////////////////////////////////
+                var oddRow = true;
+                // effacer le tableau affichant la liste des bookmarks
+                $('#bookmarkList').empty();
+                let loggedUserId = retrieveLoggedUserId();
+                // pour tous les bookmarks du tableau bookmarks
+                bookmarks.forEach(bookmark => { // créer une nouvelle rangée
+
+                    // déterminer la couleur de la rangée
+                    let bgColorRow = "row_" + bookmark.Id + " cell " + (oddRow?  "oddRow": "evenRow") ;
+                    let favicon = makeFavicon(bookmark.Url);
+                    let title = favicon + bookmark.Name;
+                    let link = makeHyperLink(bookmark.Url, title);
+                    
+                    // Distribution des données de l'bookmark dans des cellules de la rangée
+                    $('#bookmarkList').append(makeCell(link, bgColorRow + " ellipsis"));
+                    $('#bookmarkList').append(makeCell(bookmark.Category, bgColorRow + " ellipsis"));
+                    if (connected) {
+                        if (bookmark.UserId == loggedUserId) {
+                            $('#bookmarkList').append(makeCell("", bgColorRow + " ellipsis"));
+                        } else {
+                            $('#bookmarkList').append(makeCell(bookmark.Username, bgColorRow + " ellipsis"));
+                        }
+                    } else {
+                        $('#bookmarkList').append(makeCell(bookmark.Username, bgColorRow + " ellipsis"));
+                    }
+
+                    if (connected && bookmark.UserId == loggedUserId){
+                        // Bouton d'appel à la modification de l'bookmark
+                        $('#bookmarkList').append(
+                            makeCell("", bgColorRow).append(
+                                makeButton("editbookmark", "edit_" + bookmark.Id , "Modifier "+ bookmark.Name).append(
+                                    makeGlyphIcon('pencil'))));
+
+                        // Bouton d'appel au retrait de l'bookmark
+                        $('#bookmarkList').append(
+                            makeCell("", bgColorRow).append(
+                                makeButton("deletebookmark", "delete_" + bookmark.Id , "Effacer "+ bookmark.Name).append(
+                                    makeGlyphIcon('remove'))));
+                    } else {
+                        $('#bookmarkList').append(makeCell("", bgColorRow));                        
+                        $('#bookmarkList').append(makeCell("", bgColorRow));
+                    }
+                    oddRow = !oddRow;
+               });
+                // rétablir la couleur de fond de toutes les rangées
+                $('.cell').removeClass('selectedRow');
+
+                // Masquer tous les boutons des rangées d'bookmark
+                $('#bookmarkList span').hide();
+
+               $('.editbookmark').click(OpenEditBookmarkDialog);
+               $('.deletebookmark').click(deletebookmark);
+               $('#bookmarkList span').hide();
+               $('.cell').mouseover(cellOver);
+               $('.cell').mouseleave(cellBlur);
+            }
+        </script>
+    </body>
+</html>
