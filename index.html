@@ -1,18 +1,11 @@
-<!--
+<!--------------------------------------------------------------------------------------------------
+    Single Page Application
+    BOOKMARKS MANAGER WEB CLIENT
 
-    Démonstration d'une page web cliente du service Web API bookmarks
-    Cette page offre les opérations CRUD sur une liste de bookmarks conservée dans une base de données du serveur.
-
-    C - Create - POST
-    R - Read   - GET
-    U - Update - PUT
-    D - Delete - DELETE
-
-    Code de la page : Nicolas Chourot
-    Service Web API : Nicolas Chourot
-
-    Date de mise à jour: 26 octobre 2020
--->
+    LAST UPDATE: 29 octobre 2020
+    Author : Nicolas Chourot
+    College Lionel-Groulx
+----------------------------------------------------------------------------------------------------->
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -20,26 +13,27 @@
         <meta author="Nicolas Chourot">
         <meta http-equiv="Content-Type" content="text/html; charset= ISO-8859-1">
         <title>Gestion de favoris</title>
-              
+
+        <!---STYLES BUNDLE -------------------------------------------------------------------------->
         <link rel="stylesheet" href="css/jquery-ui.css">  
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 
-        <!-- Style pour les infobulles -->
+        <!-- Tooltips styles -->
         <link rel="stylesheet" href="css/tooltip.css">
 
-        <!-- pour la dialogue de confirmation de retrait d'un bookmark -->
+        <!-- Confirm dialog styles -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css">
-
+        <!-- Font awesome styles -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
-         <!-- Style pour l'interface et la liste des bookmarks -->
+         <!-- Bookmark manager main layout styles -->
          <link rel="stylesheet" href="css/BookmarksManagerLayout.css">
 
-        <!-- lien vers le favicon généré par https://favicon.io/favicon-converter/ -->
+        <!-- favicon link: use https://favicon.io/favicon-converter/ to create new favicon -->
         <link rel="icon" href="favicon.ico">
 
+        <!---Page backgroung image------------------------------------------------------------------>
         <style>
-            /* Arrière plan de la page */
             body { 
                 background: url(images/bg.png) no-repeat center center fixed; 
                 -webkit-background-size: cover;
@@ -50,8 +44,9 @@
         </style>
     </head>   
     <body>
-        <!-- Entête de la liste des bookmarks -->
+        <!---BOOKMARKS MANAGER UI CONTAINER--------------------------------------------------------->
         <div class="container">
+            <!---TITLE AND USER CONNECTION UI------------------------------------------------------->
             <div class="title-container">
                 <h2><img src="images/bookmark_logo.png" style="height: 60px; margin-right:8px;float:left;">Gestionnaire de favoris </h2>
                 <div style="margin-top:26px;text-align:right;"><h4 id="username">non connecté</h4></div>
@@ -70,6 +65,7 @@
             </div>
                        
             <div class="array-container">
+                 <!---BOOKMARKS LIST HEAD----------------------------------------------------------->
                 <div class="header-container">
                     <div class="header-bookmarks-container columns-layout">
                         <div id="sort_Name" class="sortcmd">Titre &nbsp;<span id="dir_Name"></span></div>
@@ -84,6 +80,7 @@
                     </div>
                 </div>
 
+                <!---SEARCH BAR--------------------------------------------------------------------->
                 <div class="searchBar columns-layout">
                     <div><input type="search" placeholder="Titre..." id="search_name"></div>
                     <div><input type="search" placeholder="Catégorie..." id="search_category"></div>
@@ -96,6 +93,7 @@
                     <div></div>
                 </div>
                 
+                <!---BOOKMARKS LIST----------------------------------------------------------------->
                 <div class="bookmark-list-scroll-containter">
                     <div class="bookmark-list-container columns-layout" id="bookmarkList">
                         <!-- La liste de bookmarks sera injectée ici par du JavaScript -->
@@ -114,21 +112,22 @@
                     <input type="text" id="bookmarkCategory" placeholder="Catégorie" class="form-control"/>
             </form>
         </div>
-<!---LOGIN DIALOG--------------------------------------------------------------------------->
-<div id="dialog-loginForm" title="Connexion" class="dialog">
-    <form id="loginForm" class="form-group">
-        <input type="text" id="loginEmail" placeholder="Courriel"  class="form-control"/>
-        <input type="password" id="loginPassword" placeholder="Mot de passe" class="form-control"/>
-        <br>
-        <div class="form-group form-check">
-            <input type="checkbox" class="form-check-input" id="remember-me">
-            <label class="form-check-label" for="remember-me">Se souvenir de moi</label>
-            </div>
-    </form>
-</div>
 
-         <!---PROFIL DIALOG--------------------------------------------------------------------------->
-         <div id="dialog-profilForm" title="Profil" class="dialog">
+        <!---LOGIN DIALOG--------------------------------------------------------------------------->
+        <div id="dialog-loginForm" title="Connexion" class="dialog">
+            <form id="loginForm" class="form-group">
+                <input type="text" id="loginEmail" placeholder="Courriel"  class="form-control"/>
+                <input type="password" id="loginPassword" placeholder="Mot de passe" class="form-control"/>
+                <br>
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input" id="remember-me">
+                    <label class="form-check-label" for="remember-me">Se souvenir de moi</label>
+                    </div>
+            </form>
+        </div>
+
+        <!---PROFIL DIALOG-------------------------------------------------------------------------->
+        <div id="dialog-profilForm" title="Profil" class="dialog">
             <form id="profilForm" class="form-group">
                 <input type="text" id="profilUsername" placeholder="Nom d'usager"  class="form-control"/>
                 <input type="text" id="profilEmail" placeholder="Courriel"  class="form-control"/>
@@ -137,7 +136,8 @@
                 <input type="password" id="profilConfirmPassword" placeholder="Confirmation"  class="form-control"/>
             </form>
         </div>
- 
+
+        <!---SCRIPTS BUNDLE------------------------------------------------------------------------->
         <script src="js/jquery-3.5.1.js"></script>
         <script src="js/jquery-ui.js"></script>
         <script src="js/Validation.js"></script>
@@ -145,6 +145,7 @@
         <script src="js/jquery-confirm.js"></script>
         <script src="js/jquery.maskedinput.js"></script>
 
+        <!---BOOKMARK MANAGER UI SCRIPT------------------------------------------------------------->
         <script>
             "use strict";
 
@@ -474,7 +475,6 @@
             function unsetUsername() {
                 $("#username").html("<span style='color:gray'>non connecté</span>");
             }
- 
             function successLogin() {
                 Alert("Connexion réussie");
                 connected = true;
@@ -486,9 +486,7 @@
                 connected = false;
                 unsetUsername();
                 updateUI(true);
-            }
-
-            
+            }       
             function updateConnected() {
                 let username = retrieveLoggedUsername();
                 let userid = retrieveLoggedUserId();
@@ -499,12 +497,14 @@
                     $("#btn_OpenLoginForm").hide();
                     $("#btn_OpenConfirmLogout").show();
                     $("#btn_OpenAddBookmarkDialog").show();
+                    $('#btn_OpenProfilDialog').attr("tooltip", "Profil");
                 }
                 else {
                     unsetUsername();
                     $("#btn_OpenLoginForm").show();
                     $("#btn_OpenConfirmLogout").hide();
                     $("#btn_OpenAddBookmarkDialog").hide();
+                    $('#btn_OpenProfilDialog').attr("tooltip", "Création de compte");
                 }
             }
             
