@@ -32,7 +32,7 @@ button {
 }
 .title-container {
     display: grid; 
-    grid-template-columns: 60% 30% 10%;
+    grid-template-columns: 55% 31.5% 13.5%;
 }
 .searchBar{
     background-color: rgb(60, 122, 255);
@@ -66,7 +66,7 @@ button {
     padding-left:2%; 
 }
 .oddRow {
-    background-color: white;
+    background-color: lightcyan;
 }
 .evenRow {
     background-color: lightcyan;
@@ -144,19 +144,19 @@ div2{
     border: 1px solid red !important;
 }
 .icon {
-    margin-top:-8px;
+    margin-top:-11px;
     font-size: 20px;
     height: 20px;
     cursor: pointer;
 }
 .gicon {
-    margin-top:-10px;
-    height: 20px;
+    margin-top:-9px;
+    height: 22px;
     cursor: pointer;
 }
 .giconBig {
-    font-size: 20px;
-    height: 20px;
+    font-size: 22px;
+    width: 20px;
     cursor: pointer;
 }
 

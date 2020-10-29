@@ -53,12 +53,13 @@
         <!-- Entête de la liste des bookmarks -->
         <div class="container">
             <div class="title-container">
-                <h2><img src="images/bookmark_logo.png" style="height: 40px;">&nbsp;Gestionnaire de favoris</h2>
-                <div style="margin-top:24px;text-align:right;"><h4 id="username" >non connecté</h4></div>
+                <h2><img src="images/bookmark_logo.png" style="height: 60px; margin-right:8px;float:left;">Gestionnaire de favoris </h2>
+                <div style="margin-top:26px;text-align:right;"><h4 id="username">non connecté</h4></div>
                 <div style="margin-top:30px;text-align:right;">
                     <div id="btn_OpenLoginForm" tooltip="Connexion"  tooltip-position="bottom">
                         <span id="showSearchIcon" class="giconBig glyphicon glyphicon-log-in" >&nbsp;</span>
                     </div>
+                    
                     <div id="btn_OpenConfirmLogout" tooltip="Déconnexion"  tooltip-position="bottom">
                         <span id="showSearchIcon" class="giconBig glyphicon glyphicon-log-out" >&nbsp;</span>
                     </div>
@@ -118,6 +119,11 @@
             <form id="loginForm" class="form-group">
                 <input type="text" id="loginEmail" placeholder="Courriel"  class="form-control"/>
                 <input type="password" id="loginPassword" placeholder="Mot de passe" class="form-control"/>
+                <br>
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input" id="remember-me">
+                    <label class="form-check-label" for="remember-me">Se souvenir de moi</label>
+                  </div>
             </form>
         </div>
 
@@ -176,7 +182,7 @@
                 $('#showSearch').click(toogleSearchVisibility);
                 
                 $("#sort_Name").click(updateSort);
-                $("#sort_Url").click(updateSort);
+                $("#sort_Category").click(updateSort);
                 $("#sort_Username").click(updateSort);
 
                 $("input[type=search").on("input", updateSearch)
@@ -319,31 +325,30 @@
                             },
                             {
                                 id : 'btn-deleteProfil',
-                                text : 'Effacer mon compte',
+                                text : 'Effacer mon compte...',
                                 click : function (){
                                     confirmDeleteAccount();
                                 }
                             }
                         ]
                         });
-                $('#dialog-loginForm').on('dialogclose', function(event) {
-                   pauseBookmarksListPeriodicRefresh = false;
-                });
+                
                 $('#dialog-profilForm').on('dialogopen', function(event) {
                     pauseBookmarksListPeriodicRefresh = true;
                     $('#btn-SaveProfil').addClass("btn btn-primary");
                     $('#btn-deleteProfil').addClass("btn btn-danger");
                     $('#btn-CancelProfil').addClass("btn btn-secondary");
                     if (connected) {
+                        $('#dialog-profilForm').dialog('option', 'title', 'Modification de votre profil...');
                         $('#profilUsername').val(retrieveLoggedUsername());
                         console.log(retrieveLoggedUserEmail());
                         $('#profilEmail').val(retrieveLoggedUserEmail());
-                       
                         $('#btn-deleteProfil').show();
                     } else {
+                        $('#dialog-profilForm').dialog('option', 'title', 'Création de compte...');
                         $('#profilUsername').val("");
                         $('#profilEmail').val("");
-                        $('#btn-deleteProfil').show();
+                        $('#btn-deleteProfil').hide();
                     }
                     $('#profilPassword').val("");
                     $('#profilConfirmPassword').val("");
@@ -362,18 +367,32 @@
                 $("#dialog-profilForm" ).dialog('open');
             }
             function confirmDeleteAccount() {
+                pauseBookmarksListPeriodicRefresh = true;
                 $.confirm({
                     title: 'Retrait de compte',
-                    content: '<b>Voulez-vous vraiment effacer votre compte?</b>?',
+                    content: '<b>Voulez-vous vraiment effacer votre compte?</b>',
                     buttons: {
-                        confirmer: function () {
-                            webAPI_DELETE_Account();
-                        },
+                        confirmer:  
+                            function () {
+                                if (connected) {
+                                    webAPI_DELETE_Account(retrieveLoggedUserId(), 
+                                        function () {
+                                            localStorage.setItem('rememberme', "0");
+                                            localStorage.removeItem('loginemail');
+                                            localStorage.removeItem('loginpassword');
+                                            closeAllDialog();
+                                            pauseBookmarksListPeriodicRefresh = false;
+                                            forceLogout();
+                                            updateUI(true);
+                                        }, 
+                                        AlertError);
+                                }
+                            },
                         annuler: {},
                     }
                 });
             }
- 
+
             function initLoginDialog() {
                 $("#dialog-loginForm" ).dialog(
                     {   autoOpen: false,
@@ -396,8 +415,30 @@
                         }
                     ]
                     });
+                $('#dialog-loginForm').on('dialogopen', function(event) {
+                    pauseBookmarksListPeriodicRefresh = true;
+                    if (localStorage.getItem('rememberme') == "1") {
+                        $("#remember-me").attr("checked","checked");
+                        let email = localStorage.getItem('loginemail');
+                        let password = localStorage.getItem('loginpassword');
+                        if (email) $("#loginEmail").val(email);
+                        if (password) $("#loginPassword").val(password);
+                    } else {
+                        $("#loginEmail").val("");
+                        $("#loginPassword").val("");
+                    }
+                });
                 $('#dialog-loginForm').on('dialogclose', function(event) {
                    pauseBookmarksListPeriodicRefresh = false;
+                   if ($('#remember-me').is(":checked")) {
+                        localStorage.setItem('rememberme', "1");
+                        localStorage.setItem('loginemail', $("#loginEmail").val());
+                        localStorage.setItem('loginpassword', $("#loginPassword").val());
+                    } else {
+                        localStorage.setItem('rememberme', "0");
+                        localStorage.removeItem('loginemail');
+                        localStorage.removeItem('loginpassword');
+                    }    
                 });
             }
             function OpenConfirmLogout() {
@@ -596,15 +637,16 @@
             }
             function AlertError(status) {
                 $.confirm({
-                    title: "Message provenant du server...",
+                    title: "Message provenant du server..." + status,
                     content: '<img src="images/error.png" style="width:60px;margin:10px" alt="httpError"/>' + statusToString(status),
                     buttons: {
                         fermer: function () { 
+                            this.close();
                             if (status == 401) {
-                                this.close();
                                 forceLogout();
-                                updateUI();
+                                updateUI(true);
                             }
+                            pauseBookmarksListPeriodicRefresh = true;
                         }
                     }
                 });

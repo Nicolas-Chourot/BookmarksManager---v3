@@ -109,8 +109,8 @@ function webAPI_login( Email, Password, successCallBack, errorCallBack) {
             storeLoggedUserId(response.UserId);
             successCallBack();
         },
-        error: function(jqXHR) {
-            errorCallBack(jqXHR.responseText);
+        error: function(jqXHR, textStatus, errorThrown) {  
+            errorCallBack(jqXHR.status);
             console.log("webAPI_login - error");
         }
     })
@@ -201,3 +201,18 @@ function webAPI_DELETE( id, successCallBack, errorCallBack) {
         }
     });
 }
+
+function webAPI_DELETE_Account( id, successCallBack, errorCallBack) {
+    $.ajax({
+        url: apiBaseURL + "/accounts/remove/" + id,
+        contentType:'text/plain',
+        type: 'DELETE',
+        headers: getBearerAuthorizationToken(),
+        success:() => {successCallBack(); },
+        error: function(jqXHR, textStatus, errorThrown) {
+            errorCallBack(jqXHR.status);
+            console.log("webAPI_DELETE_Account - error");
+        }
+    });
+}
+
