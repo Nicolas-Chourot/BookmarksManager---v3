@@ -325,7 +325,7 @@
                             },
                             {
                                 id : 'btn-deleteProfil',
-                                text : 'Effacer mon compte...',
+                                text : 'Désinscription',
                                 click : function (){
                                     confirmDeleteAccount();
                                 }
@@ -370,7 +370,7 @@
                 pauseBookmarksListPeriodicRefresh = true;
                 $.confirm({
                     title: 'Retrait de compte',
-                    content: '<b>Voulez-vous vraiment effacer votre compte?</b>',
+                    content: '<b>Voulez-vous vraiment effacer votre compte <br>ainsi que tous vos favoris?</b>',
                     buttons: {
                         confirmer:  
                             function () {
