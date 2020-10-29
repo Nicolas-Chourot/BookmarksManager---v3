@@ -114,18 +114,18 @@
                     <input type="text" id="bookmarkCategory" placeholder="Catégorie" class="form-control"/>
             </form>
         </div>
-        <!---LOGIN DIALOG--------------------------------------------------------------------------->
-        <div id="dialog-loginForm" title="Connexion" class="dialog">
-            <form id="loginForm" class="form-group">
-                <input type="text" id="loginEmail" placeholder="Courriel"  class="form-control"/>
-                <input type="password" id="loginPassword" placeholder="Mot de passe" class="form-control"/>
-                <br>
-                <div class="form-group form-check">
-                    <input type="checkbox" class="form-check-input" id="remember-me">
-                    <label class="form-check-label" for="remember-me">Se souvenir de moi</label>
-                  </div>
-            </form>
-        </div>
+<!---LOGIN DIALOG--------------------------------------------------------------------------->
+<div id="dialog-loginForm" title="Connexion" class="dialog">
+    <form id="loginForm" class="form-group">
+        <input type="text" id="loginEmail" placeholder="Courriel"  class="form-control"/>
+        <input type="password" id="loginPassword" placeholder="Mot de passe" class="form-control"/>
+        <br>
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="remember-me">
+            <label class="form-check-label" for="remember-me">Se souvenir de moi</label>
+            </div>
+    </form>
+</div>
 
          <!---PROFIL DIALOG--------------------------------------------------------------------------->
          <div id="dialog-profilForm" title="Profil" class="dialog">
@@ -185,12 +185,13 @@
                 $("#sort_Category").click(updateSort);
                 $("#sort_Username").click(updateSort);
 
-                $("input[type=search").on("input", updateSearch)
+                $("input[type=search").on("input", updateHead);
 
                 insertWaitingStatus();
                 initBookmarksListColumnsLayout();
-                installPeriodicBookmarksListRefresh();
+                
                 updateUI();
+                installPeriodicBookmarksListRefresh();
             }
 
             function initBookmarksListColumnsLayout() {
@@ -383,7 +384,6 @@
                                             closeAllDialog();
                                             pauseBookmarksListPeriodicRefresh = false;
                                             forceLogout();
-                                            updateUI(true);
                                         }, 
                                         AlertError);
                                 }
@@ -403,7 +403,14 @@
                             id : 'btn-OkLogin',
                             text : 'Ok',
                             click : function() {
-                                webAPI_login($("#loginEmail").val(), $("#loginPassword").val(), ()=>{$("#dialog-loginForm").dialog( "close" ); updateUI(true);}, failLogin);
+                                pauseBookmarksListPeriodicRefresh = false;
+                                webAPI_login($( "#loginEmail").val(), 
+                                                $("#loginPassword").val(), 
+                                                ()=>{
+                                                        $("#dialog-loginForm").dialog( "close" ); 
+                                                        updateUI(true);
+                                                }, 
+                                                failLogin);
                             }
                         },
                         {
@@ -447,6 +454,7 @@
                     content: 'Voulez-vous vous déconnecter?',
                     buttons: {
                         confirmer: function () {
+                            pauseBookmarksListPeriodicRefresh = false;
                             deConnect();
                             updateUI(true);
                         },
@@ -471,22 +479,16 @@
                 Alert("Connexion réussie");
                 connected = true;
                 setUsername(retrieveLoggedUsername());
-                updateUI();
+                updateUI(true);
             }
             function failLogin() {
                 Alert("Connexion échouée");
                 connected = false;
                 unsetUsername();
-                updateUI();
+                updateUI(true);
             }
 
-            function updateUI(forceRefresh = false){
-                forceRefreshbookmarkList = forceRefresh;
-                updateConnected();
-                updateWriteAccess();
-                updateHead();
-                forceRefresh = false;
-            }
+            
             function updateConnected() {
                 let username = retrieveLoggedUsername();
                 let userid = retrieveLoggedUserId();
@@ -496,20 +498,16 @@
                     setUsername(username );
                     $("#btn_OpenLoginForm").hide();
                     $("#btn_OpenConfirmLogout").show();
+                    $("#btn_OpenAddBookmarkDialog").show();
                 }
                 else {
                     unsetUsername();
                     $("#btn_OpenLoginForm").show();
                     $("#btn_OpenConfirmLogout").hide();
-                }
-            }
-            function updateWriteAccess() {
-                if (connected) {
-                    $("#btn_OpenAddBookmarkDialog").show();
-                } else {
                     $("#btn_OpenAddBookmarkDialog").hide();
                 }
             }
+            
             function installPeriodicBookmarksListRefresh() {
                 setInterval(() => { if (!pauseBookmarksListPeriodicRefresh) getBookmarks(); }, 15000);
             }
@@ -557,6 +555,7 @@
                 }
             }
             function updateSearch(){ 
+               
                 search = "";
                 addSearchKey("name", $("#search_name").val());                
                 addSearchKey("category", $("#search_category").val());
@@ -568,6 +567,7 @@
                     else
                         search = "?"+ search;
                 }
+                queryString += search;
                 updateUI(true);
             }
             function updateHead() {
@@ -590,7 +590,7 @@
                     $("#dir_"+sort.field).addClass('glyphicon glyphicon-sort-by-attributes');
                     sortIndex ++;
                 });
-                getBookmarks();
+                updateSearch();
             }
  
             function createCssClass(name, rules){
@@ -625,6 +625,7 @@
                 Alert("Expiration de permission d'accès. Vous n'êtes plus connecté.");
                 closeAllDialog();
                 deConnect();
+                updateUI(true);
             }
             function Alert(message) {
                 $.confirm({
@@ -644,7 +645,6 @@
                             this.close();
                             if (status == 401) {
                                 forceLogout();
-                                updateUI(true);
                             }
                             pauseBookmarksListPeriodicRefresh = true;
                         }
@@ -721,22 +721,38 @@
                 }
                 return "";
             }
-
+            function updateUI(forceRefresh = false){
+                forceRefreshbookmarkList = forceRefresh;
+                updateConnected();
+                getBookmarks();
+                forceRefreshbookmarkList = false;
+            }
             function getBookmarks() {
-                console.log(queryString + search);
-                webAPI_HEAD(checkETag, AlertError);
+                console.log(queryString);
+                if (forceRefreshbookmarkList){
+                    webAPI_HEAD(getETag, AlertError);
+                } else
+                    webAPI_HEAD(checkETag, AlertError);
+            }
+            function getETag(ETag){
+                currentETag = ETag;
+                webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
+                console.log("Forced Downloading bookmarks");
             }
             function checkETag(ETag){
-                console.log(ETag);
-               if (ETag != currentETag || forceRefreshbookmarkList) {
-                    webAPI_GET_ALL(queryString + search, updatebookmarkList, AlertError);
+                if (ETag != currentETag) {
+                    webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
                     currentETag = ETag;
-               } else {
-                   if (previousQueryString != queryString){
-                    webAPI_GET_ALL(queryString + search, updatebookmarkList, AlertError);
-                    previousQueryString = queryString;
-                   }
-               }
+                    console.log("new ETag Downloading bookmarks")
+                } else {
+                   if (previousQueryString != queryString || forceRefreshbookmarkList){
+                        webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
+                        previousQueryString = queryString;
+                        console.log("new queryString Downloading bookmarks")
+                    } else {
+                            console.log("Bookmarks list up to date")
+                    }
+                }
             }
             function cellOver(e){
                 if (!addMode && !editMode) {
