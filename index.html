@@ -191,6 +191,7 @@
                 insertWaitingStatus();
                 initBookmarksListColumnsLayout();
                 
+                updateHead();
                 updateUI();
                 installPeriodicBookmarksListRefresh();
             }
@@ -592,7 +593,40 @@
                 });
                 updateSearch();
             }
- 
+            function updateUI(forceRefresh = false){
+                forceRefreshbookmarkList = forceRefresh;
+                updateConnected();
+                getBookmarks();
+                forceRefreshbookmarkList = false;
+            }
+            function getBookmarks() {
+                console.log(queryString);
+                if (forceRefreshbookmarkList){
+                    webAPI_HEAD(getETag, AlertError);
+                } else
+                    webAPI_HEAD(checkETag, AlertError);
+            }
+            function getETag(ETag){
+                currentETag = ETag;
+                webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
+                console.log("Forced Downloading bookmarks");
+            }
+            function checkETag(ETag){
+                if (ETag != currentETag) {
+                    webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
+                    currentETag = ETag;
+                    console.log("new ETag Downloading bookmarks")
+                } else {
+                   if (previousQueryString != queryString || forceRefreshbookmarkList){
+                        webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
+                        previousQueryString = queryString;
+                        console.log("new queryString Downloading bookmarks")
+                    } else {
+                            console.log("Bookmarks list up to date")
+                    }
+                }
+            }
+  
             function createCssClass(name, rules){
                 var style = document.createElement('style');
                 style.type = 'text/css';
@@ -720,39 +754,6 @@
                         return "Différent du mot de passe."
                 }
                 return "";
-            }
-            function updateUI(forceRefresh = false){
-                forceRefreshbookmarkList = forceRefresh;
-                updateConnected();
-                getBookmarks();
-                forceRefreshbookmarkList = false;
-            }
-            function getBookmarks() {
-                console.log(queryString);
-                if (forceRefreshbookmarkList){
-                    webAPI_HEAD(getETag, AlertError);
-                } else
-                    webAPI_HEAD(checkETag, AlertError);
-            }
-            function getETag(ETag){
-                currentETag = ETag;
-                webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
-                console.log("Forced Downloading bookmarks");
-            }
-            function checkETag(ETag){
-                if (ETag != currentETag) {
-                    webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
-                    currentETag = ETag;
-                    console.log("new ETag Downloading bookmarks")
-                } else {
-                   if (previousQueryString != queryString || forceRefreshbookmarkList){
-                        webAPI_GET_ALL(queryString, updatebookmarkList, AlertError);
-                        previousQueryString = queryString;
-                        console.log("new queryString Downloading bookmarks")
-                    } else {
-                            console.log("Bookmarks list up to date")
-                    }
-                }
             }
             function cellOver(e){
                 if (!addMode && !editMode) {
