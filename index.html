@@ -330,7 +330,6 @@
                             }
                         ]
                         });
-                
                 $('#dialog-profilForm').on('dialogopen', function(event) {
                     pauseBookmarksListPeriodicRefresh = true;
                     $('#btn-SaveProfil').addClass("btn btn-primary");
@@ -750,6 +749,7 @@
                 }
                 return "";
             }
+
             function cellOver(e){
                 if (!addMode && !editMode) {
                     // currentTarget.className contient en principe : 'row_x cell ...'

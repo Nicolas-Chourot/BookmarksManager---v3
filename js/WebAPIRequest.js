@@ -2,66 +2,51 @@
     Méthodes d'accès aux services Web API_Server/bookmarks
  */
 
-const apiBaseURL= "http://localhost:5000";
-//const apiBaseURL= "https://blushing-imaginary-streetcar.glitch.me/api/bookmarks";
-
+//const apiBaseURL= "http://localhost:5000";
+const apiBaseURL= "https://healthy-decisive-curve.glitch.me";
 
 function tokenRequestURL() {
     return apiBaseURL + '/token';
 }
-
 function storeAccessToken(token) {
     localStorage.setItem('access_Token', token);
 }
-
 function eraseAccessToken() {
     localStorage.removeItem('access_Token');
 }
-
 function retrieveAccessToken() {
     return  localStorage.getItem('access_Token');
 }
-
 function getBearerAuthorizationToken() {
     return { 'Authorization': 'Bearer ' + retrieveAccessToken() };
 }
-
 function registerRequestURL() {
     return apiBaseURL + '/Accounts/register';
 }
-
 function storeLoggedUsername(username) {
     localStorage.setItem('username', username);
 }
-
 function retrieveLoggedUsername() {
     return localStorage.getItem('username');
 }
-
 function storeLoggedUserId(userid) {
     localStorage.setItem('userid', userid);
 }
-
 function retrieveLoggedUserId() {
     return parseInt(localStorage.getItem('userid'));
 }
-
 function storeLoggedUserEmail(email) {
     localStorage.setItem('useremail', email);
 }
-
 function retrieveLoggedUserEmail() {
     return localStorage.getItem('useremail');
 }
-
-
 function deConnect() {
     localStorage.removeItem('username');
     localStorage.removeItem('userid');
     localStorage.removeItem('useremail');
     eraseAccessToken();
 }
-
 function webAPI_Register(profil, successCallBack, errorCallBack){
     $.ajax({
         url: apiBaseURL + "/accounts/register",
@@ -95,7 +80,6 @@ function webAPI_ChangeProfil( profil , successCallBack, errorCallBack) {
         }
     });
 }
-
 function webAPI_login( Email, Password, successCallBack, errorCallBack) {
     $.ajax({
         url: tokenRequestURL(),
@@ -116,13 +100,13 @@ function webAPI_login( Email, Password, successCallBack, errorCallBack) {
         }
     })
 }
-
 function webAPI_HEAD(successCallBack, errorCallBack) {
     $.ajax({
-        url: apiBaseURL + "/api/bookmarks" + queryString,
+        url: apiBaseURL + "/api/bookmarks",
         type: 'HEAD',
         contentType:'text/plain',
-        complete: function(request, status) { 
+        complete: function(request) { 
+            console.log(request.getResponseHeader('ETag'));
             successCallBack(request.getResponseHeader('ETag'));},
         error: function(jqXHR, textStatus, errorThrown) {
             errorCallBack(jqXHR.status);
@@ -130,7 +114,6 @@ function webAPI_HEAD(successCallBack, errorCallBack) {
         }
     });
 }
-
 function webAPI_GET_ALL(queryString, successCallBack, errorCallBack) {
     $.ajax({
         url: apiBaseURL + "/api/bookmarks" + queryString,
@@ -144,7 +127,6 @@ function webAPI_GET_ALL(queryString, successCallBack, errorCallBack) {
         }
     });
 }
-
 function webAPI_GET( id, successCallBack, errorCallBack) {
     $.ajax({
         url: apiBaseURL + "/api/bookmarks" + "/" + id,
@@ -158,7 +140,6 @@ function webAPI_GET( id, successCallBack, errorCallBack) {
         }
     });
 }
-
 function webAPI_POST( data , successCallBack, errorCallBack) {
     $.ajax({
         url: apiBaseURL + "/api/bookmarks",
@@ -173,7 +154,6 @@ function webAPI_POST( data , successCallBack, errorCallBack) {
         }
     });
 }
-
 function webAPI_PUT(data, successCallBack, errorCallBack) {
     $.ajax({
         url: apiBaseURL + "/api/bookmarks" + "/" + data.Id,
@@ -188,7 +168,6 @@ function webAPI_PUT(data, successCallBack, errorCallBack) {
         }
     });
 }
-
 function webAPI_DELETE( id, successCallBack, errorCallBack) {
     $.ajax({
         url: apiBaseURL + "/api/bookmarks" + "/" + id,
@@ -202,7 +181,6 @@ function webAPI_DELETE( id, successCallBack, errorCallBack) {
         }
     });
 }
-
 function webAPI_DELETE_Account( id, successCallBack, errorCallBack) {
     $.ajax({
         url: apiBaseURL + "/accounts/remove/" + id,
