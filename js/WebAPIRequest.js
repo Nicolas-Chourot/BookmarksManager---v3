@@ -103,6 +103,7 @@ function webAPI_login( Email, Password, successCallBack, errorCallBack) {
         type: 'POST',
         data: JSON.stringify({Email, Password}),
         success: function (response) {
+            console.log(response);
             storeAccessToken(response.Access_token);
             storeLoggedUsername(response.Username);
             storeLoggedUserEmail(Email);

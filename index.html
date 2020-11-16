@@ -731,10 +731,10 @@
             }
             function validate_ProfilEmail(){
                 let TBX_Email = document.getElementById("profilEmail");
-                let UrlRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                let EmailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
                 if (TBX_Email.value === "")
                     return "Courriel manquant";
-                if (!UrlRegex.test(TBX_Email.value))
+                if (!EmailRegex.test(TBX_Email.value))
                     return "Courriel invalide";
                 return "";
             }            
